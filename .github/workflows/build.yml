@@ -1,5 +1,7 @@
 name: Build APK
 on: workflow_dispatch
+permissions:
+  contents: write
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,18 +17,43 @@ jobs:
       - name: Crea il progetto Android
         run: |
           npm init -y
-          npm i @capacitor/core @capacitor/cli @capacitor/android jszip
-          mkdir www
+          npm i @capacitor/core @capacitor/cli @capacitor/android @capacitor/assets jszip
+          mkdir -p www assets
           cp index.html www/index.html
           cp node_modules/jszip/dist/jszip.min.js www/
           sed -i 's#https://cdnjs[^"]*jszip[^"]*#jszip.min.js#' www/index.html
-          npx cap init Tankobon it.tankobon.reader --web-dir www
+          npx cap init "Tankōbon" it.tankobon.reader --web-dir www
           npx cap add android
+      - name: Icona dell'app
+        continue-on-error: true
+        run: |
+          cat > icon.svg <<'SVG'
+          <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+          <rect width="1024" height="1024" fill="#121316"/>
+          <g fill="none" stroke="#e0b341" stroke-width="16">
+          <circle cx="512" cy="512" r="330"/>
+          <circle cx="512" cy="512" r="290" stroke-dasharray="10 26" stroke-width="10"/>
+          <circle cx="512" cy="512" r="262"/>
+          <polygon points="512,270 722,634 302,634"/>
+          <polygon points="512,754 302,390 722,390"/>
+          <circle cx="512" cy="512" r="95"/>
+          </g>
+          <circle cx="512" cy="512" r="38" fill="#9b1c1c"/>
+          </svg>
+          SVG
+          node -e "require('sharp')('icon.svg').resize(1024,1024).png().toFile('assets/icon-only.png')"
+          sleep 2
+          npx capacitor-assets generate --android --iconBackgroundColor '#16161a' --iconBackgroundColorDark '#16161a'
+      - name: Compila
+        run: |
           npx cap sync android
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
-      - uses: actions/upload-artifact@v4
+          cp app/build/outputs/apk/debug/app-debug.apk ../Tankobon.apk
+      - uses: softprops/action-gh-release@v2
         with:
-          name: tankobon-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          tag_name: v${{ github.run_number }}
+          name: Tankōbon v${{ github.run_number }}
+          files: Tankobon.apk
+
