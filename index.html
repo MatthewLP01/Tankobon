@@ -1,98 +1,44 @@
-<!DOCTYPE html>
-<html lang="it">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Tankōbon – lettore manga alchemico</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;800&display=swap">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<style>
-:root{--bg:#e4e0d6;--bg2:#f0ece2;--ink:#1a1412;--sub:#5f5750;--card:#f6f2ea;--line:#1a1412;--acc:#9b1c1c;--accfg:#fff;--gold:#a8802a;--dot:rgba(26,20,18,.09);--plate:linear-gradient(#fbf8f1,#e0d9ca);--tg:linear-gradient(#b82a2a,#6f1010);--ff:"Cinzel","Trajan Pro","Hiragino Mincho ProN",Georgia,serif;
-box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e0f12;--bg2:#1b1d23;--ink:#ece8df;--sub:#a29d92;--card:#1d1f24;--line:#c9a24a;--acc:#e0b341;--accfg:#1a1205;--gold:#d9b04a;--dot:rgba(224,179,65,.06);--plate:linear-gradient(#30333b,#17191e);--tg:linear-gradient(#fbe9ab,#d4a23a 55%,#8c6218)}}
-:root[data-theme="dark"]{--bg:#0e0f12;--bg2:#1b1d23;--ink:#ece8df;--sub:#a29d92;--card:#1d1f24;--line:#c9a24a;--acc:#e0b341;--accfg:#1a1205;--gold:#d9b04a;--dot:rgba(224,179,65,.06);--plate:linear-gradient(#30333b,#17191e);--tg:linear-gradient(#fbe9ab,#d4a23a 55%,#8c6218)}
-*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:"Hiragino Mincho ProN","Noto Serif JP",Georgia,serif}
-body{background:radial-gradient(var(--dot) 1.2px,transparent 1.4px) 0 0/10px 10px,radial-gradient(130% 70% at 50% 0%,var(--bg2),var(--bg) 70%);background-attachment:scroll,fixed}
-body::before{content:"";position:fixed;left:50%;top:58%;width:125vmin;height:125vmin;transform:translate(-50%,-50%);background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Cg fill='none' stroke='%23c9a24a' stroke-width='1.1'%3E%3Ccircle cx='100' cy='100' r='94'/%3E%3Ccircle cx='100' cy='100' r='86' stroke-dasharray='2 5'/%3E%3Ccircle cx='100' cy='100' r='78'/%3E%3Cpolygon points='100,26 164,137 36,137'/%3E%3Cpolygon points='100,174 36,63 164,63'/%3E%3Ccircle cx='100' cy='100' r='30'/%3E%3C/g%3E%3C/svg%3E") center/contain no-repeat;opacity:.09;pointer-events:none;z-index:0}
-header,.bar,h2,.grid,.empty{position:relative;z-index:1}
-button{font:inherit;color:inherit;cursor:pointer}
-header{margin:14px 14px 0;padding:26px 20px 22px;border:2px solid var(--gold);border-radius:6px;background:var(--plate);box-shadow:inset 0 0 0 5px var(--bg),inset 0 0 0 6px var(--gold),0 12px 28px rgba(0,0,0,.3);overflow:hidden}
-header::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 12px 12px,var(--gold) 2.6px,transparent 3.2px),radial-gradient(circle at calc(100% - 12px) 12px,var(--gold) 2.6px,transparent 3.2px),radial-gradient(circle at 12px calc(100% - 12px),var(--gold) 2.6px,transparent 3.2px),radial-gradient(circle at calc(100% - 12px) calc(100% - 12px),var(--gold) 2.6px,transparent 3.2px)}
-h1{margin:0;font-family:var(--ff);font-size:36px;letter-spacing:.07em;font-weight:800;line-height:1.05;background:var(--tg);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 2px 0 rgba(0,0,0,.25))}
-h1 small{display:block;font-family:Georgia,serif;font-style:italic;font-size:13px;font-weight:400;color:var(--sub);-webkit-text-fill-color:var(--sub);margin-top:10px;letter-spacing:.02em;filter:none}
-.ring{position:absolute;right:-46px;top:-34px;width:210px;color:var(--gold);opacity:.55;animation:spin 90s linear infinite;filter:drop-shadow(0 0 6px var(--gold))}
-@keyframes spin{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:reduce){.ring{animation:none}}
-.kanji{position:absolute;right:40px;top:6px;writing-mode:vertical-rl;font-size:44px;font-weight:900;color:transparent;-webkit-text-stroke:1.4px var(--gold);line-height:1;opacity:.9}
-.bar{display:flex;gap:10px;padding:18px 18px 2px;flex-wrap:wrap}
-.btn{font-family:var(--ff);font-size:13px;letter-spacing:.05em;border:2px solid var(--gold);background:var(--plate);padding:10px 15px;border-radius:6px;font-weight:700;box-shadow:0 3px 0 rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.25)}
-.btn:active{transform:translateY(2px);box-shadow:0 1px 0 rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.25)}
-.btn.acc{background:linear-gradient(#b82a2a,#6c0f0f);color:#fbe8b0}
-h2{display:flex;align-items:center;gap:10px;margin:32px 20px 0;font-family:var(--ff);font-size:15px;letter-spacing:.14em;font-weight:700}
-h2::before{content:"";width:9px;height:9px;background:var(--gold);transform:rotate(45deg);flex:none}
-h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--gold),transparent)}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:28px 20px;padding:20px 22px 40px}
-@media(min-width:640px){.grid{grid-template-columns:repeat(4,1fr)}}
-.vol{position:relative}
-.vol .o{background:none;border:0;padding:0;text-align:left;width:100%}
-.cv{display:block;aspect-ratio:600/850;border:2px solid var(--gold);border-radius:3px;outline:1px solid var(--gold);outline-offset:3px;box-shadow:0 12px 22px rgba(0,0,0,.45);background:#fff;overflow:hidden;position:relative;transition:transform .15s}
-.o:active .cv{transform:translateY(2px) scale(.99)}
-.cv::before{content:"";position:absolute;inset:7px;border:1px solid rgba(224,179,65,.8);z-index:1;pointer-events:none}
-.cv::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,.5),rgba(0,0,0,.1) 4%,transparent 10%,transparent 95%,rgba(0,0,0,.25));pointer-events:none}
-.cv img{width:100%;height:100%;object-fit:cover;display:block}
-.pr{display:block;height:5px;margin:14px 3px 0;background:var(--dot);border:1px solid var(--gold);border-radius:3px;overflow:hidden}
-.pr i{display:block;height:100%;background:linear-gradient(90deg,#8c6218,var(--gold))}
-.vol b{display:block;margin-top:9px;font-family:var(--ff);font-size:13px;letter-spacing:.03em;line-height:1.35}
-.vol .m{font-size:12px;color:var(--sub);font-style:italic}
-.x{position:absolute;top:-11px;right:-9px;width:28px;height:28px;border-radius:50%;border:2px solid var(--gold);background:var(--plate);font-size:14px;line-height:1;padding:0;font-weight:900;z-index:2;box-shadow:0 2px 6px rgba(0,0,0,.4)}
-.empty{margin:14px 22px 0;padding:18px;border:1.5px dashed var(--gold);background:var(--card);color:var(--sub);font-size:14px;line-height:1.55;border-radius:6px;font-style:italic}
-#rd{position:fixed;inset:0;background:radial-gradient(circle at 50% 40%,#1a1b21,#07070a);display:none;flex-direction:column;z-index:5;color:#f3e3b4}
-#rd.on{display:flex}
-#stage{flex:1;position:relative;overflow:hidden;touch-action:none}
-#sheet{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transform-origin:center;will-change:transform}
-#sheet.rtl{flex-direction:row-reverse}
-#sheet img{max-width:100%;max-height:100%;min-width:0;object-fit:contain;background:#fff;user-select:none;-webkit-user-drag:none;box-shadow:0 0 36px rgba(0,0,0,.7)}
-#sheet.two img{max-width:50%}
-.ui{position:absolute;left:0;right:0;display:flex;align-items:center;gap:8px;padding:10px 12px;background:linear-gradient(rgba(11,11,14,.96),rgba(11,11,14,.82));transition:opacity .15s;z-index:3}
-.ui.hide{opacity:0;pointer-events:none}
-#top{top:0;padding-top:calc(10px + env(safe-area-inset-top,0px));border-bottom:1px solid rgba(224,179,65,.55)}
-#bot{bottom:0;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));border-top:1px solid rgba(224,179,65,.55)}
-#ttl{flex:1;font-family:var(--ff);font-weight:700;font-size:13px;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.rb{background:linear-gradient(#2c2f37,#17191e);border:1.5px solid rgba(224,179,65,.85);color:#f3e3b4;border-radius:5px;padding:6px 10px;font-size:13px;font-weight:700;min-width:38px}
-#sl{flex:1;accent-color:#e0b341}
-#sl.rtl{direction:rtl}
-#cnt{font-size:13px;min-width:62px;text-align:right;font-variant-numeric:tabular-nums;color:#e0b341}
-.zone{position:absolute;top:56px;bottom:56px;width:33%;z-index:1}
-#zl{left:0}#zr{right:0}
-#hint{position:absolute;bottom:84px;left:50%;transform:translateX(-50%);background:rgba(11,11,14,.92);border:1px solid rgba(224,179,65,.6);padding:8px 14px;border-radius:20px;font-size:13px;z-index:4;transition:opacity .6s;pointer-events:none;white-space:nowrap}
-</style>
-</head>
-<body>
-<header>
-  <svg class="ring" viewBox="0 0 200 200" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2"><circle cx="100" cy="100" r="94"/><circle cx="100" cy="100" r="86" stroke-dasharray="2 6"/><circle cx="100" cy="100" r="78"/><polygon points="100,26 164,137 36,137"/><polygon points="100,174 36,63 164,63"/><circle cx="100" cy="100" r="30"/><circle cx="100" cy="100" r="8"/></g></svg><div class="kanji" aria-hidden="true">錬金術</div>
-  <h1>Tankōbon<small>Scambio equivalente: una pagina alla volta.</small></h1>
-</header>
-<div class="bar">
-  <button class="btn acc" id="addImg">Apri immagini</button>
-  <button class="btn" id="addCbz">Apri CBZ</button>
-  <button class="btn" id="theme">Tema</button>
-</div>
-<input type="file" id="fImg" accept="image/*" multiple hidden>
-<input type="file" id="fCbz" accept=".cbz,.zip" hidden>
-<h2>I tuoi volumi</h2>
-<p class="empty" id="mine">Lo scaffale dell’archivio è vuoto. Apri le pagine di un capitolo (JPG o PNG) oppure un file CBZ: li ritrovi qui anche dopo aver chiuso l’app.</p>
-<div class="grid" id="lib"></div>
-<h2>Volume di prova</h2>
-<div class="grid" id="demo"></div>
+$('mode').onclick=function(){rtl=!rtl;ls('rtl',rtl?'1':'0');setUI();show();hint(rtl?'Lettura da destra a sinistra':'Lettura da sinistra a destra')};
+$('spread').onclick=function(){auto=!auto;ls('auto',auto?'1':'0');setUI();show();hint(auto?'Doppia pagina in orizzontale':'Pagina singola')};
+$('zoom').onclick=function(){S=S>1?1:2.2;X=Y=0;tf()};
+$('sl').oninput=function(){idx=parseInt(this.value,10)-1;show()};
+addEventListener('resize',function(){if(cur&&$('rd').classList.contains('on'))show()});
+document.addEventListener('keydown',function(e){if(!$('rd').classList.contains('on'))return;
+ if(e.key==='ArrowLeft')go(rtl?1:-1);else if(e.key==='ArrowRight')go(rtl?-1:1);else if(e.key==='Escape')$('back').click()});
 
-<div id="rd">
-  <div id="stage">
-    <div class="zone" id="zl"></div><div class="zone" id="zr"></div>
-    <div id="sheet"><img id="p1" alt="Pagina"><img id="p2" alt="Pagina" style="display:none"></div>
-    <div id="hint"></div>
-  </div>
-  <div class="ui" id="top"><button class="rb" id="back">‹</button><div id="ttl"></div><button class="rb" id="zoom">＋</button><button class="rb" id="spread">2p</button><button class="rb" id="mode">右→左</button></div>
+/* ---- Zoom a pizzico e trascinamento ---- */
+var d0=0,s0=1,lx=0,ly=0,st=$('stage');
+function dist(e){return Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY)}
+function clamp(){var mx=(S-1)*st.clientWidth/2,my=(S-1)*st.clientHeight/2;X=Math.max(-mx,Math.min(mx,X));Y=Math.max(-my,Math.min(my,Y))}
+st.addEventListener('touchstart',function(e){moved=false;if(e.touches.length==2){d0=dist(e);s0=S}else{lx=e.touches[0].clientX;ly=e.touches[0].clientY}},{passive:true});
+st.addEventListener('touchmove',function(e){
+ if(e.touches.length==2){S=Math.max(1,Math.min(4,s0*dist(e)/d0));moved=true;if(S==1)X=Y=0;clamp();tf()}
+ else if(S>1){var t=e.touches[0];X+=t.clientX-lx;Y+=t.clientY-ly;lx=t.clientX;ly=t.clientY;moved=true;clamp();tf()}},{passive:true});
+st.addEventListener('touchend',function(e){if(e.touches.length==1){lx=e.touches[0].clientX;ly=e.touches[0].clientY}if(moved)setTimeout(function(){moved=false},250)},{passive:true});
+
+/* ---- Importazione ---- */
+$('addImg').onclick=function(){$('fImg').click()};
+$('addCbz').onclick=function(){$('fCbz').click()};
+$('fImg').onchange=function(){var f=Array.prototype.slice.call(this.files).sort(natural);this.value='';if(f.length)add('Capitolo '+(books.length),f)};
+$('fCbz').onchange=function(){var f=this.files[0];this.value='';if(!f)return;
+ if(typeof JSZip==='undefined'){alert('Impossibile leggere il CBZ: libreria non caricata.');return}
+ JSZip.loadAsync(f).then(function(z){var es=[];z.forEach(function(p,e){if(!e.dir&&/\.(jpe?g|png|webp|gif)$/i.test(p))es.push(e)});es.sort(natural);
+  if(!es.length){alert('Nessuna immagine trovata nel file.');return}
+  return Promise.all(es.map(function(e){return e.async('blob')})).then(function(bl){add(f.name.replace(/\.(cbz|zip)$/i,''),bl)})
+ }).catch(function(){alert('File non valido. Controlla che sia un CBZ o uno ZIP di immagini.')})};
+
+/* ---- Tema ---- */
+$('theme').onclick=function(){var r=document.documentElement,a=r.getAttribute('data-theme'),dark=a?a==='dark':matchMedia('(prefers-color-scheme: dark)').matches,n=dark?'light':'dark';r.setAttribute('data-theme',n);ls('theme',n)};
+var t=ls('theme');if(t)document.documentElement.setAttribute('data-theme',t);
+
+books.push({id:'demo-cerchio',demo:true,title:'Il Cerchio di Gesso, vol. 1',pages:demoPages()});
+render();
+idb().then(all).then(function(rows){rows.forEach(function(r){books.splice(books.length-1,0,{id:r.id,title:r.title,blobs:r.blobs,pages:r.blobs.map(function(x){return URL.createObjectURL(x)})})});render()});
+})();
+</script>
+</body>
+</html>
+iv id="ttl"></div><button class="rb" id="zoom">＋</button><button class="rb" id="spread">2p</button><button class="rb" id="mode">右→左</button></div>
   <div class="ui" id="bot"><input type="range" id="sl" min="1" value="1"><div id="cnt"></div></div>
 </div>
 
